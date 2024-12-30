@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # アプリケーションコードをマウント
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/app_db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: app_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    volumes:
+      - ./db_data:/var/lib/postgresql/data  # ローカルに永続化
+      - ./db_scripts:/docker-entrypoint-initdb.d  # SQLスクリプトを適用
+
+volumes:
+  db_data:  # ボリューム定義を削除可能
