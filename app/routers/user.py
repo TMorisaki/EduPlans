@@ -19,7 +19,15 @@ def register_user(user: UserRegister):
 @router.post("/login")
 def login_user(user: UserLogin):
     db_user = users_db.get(user.email)
-    if not db_user or not verify_password(user.password, db_user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")  # ユーザーが存在しない場合
+
+    if not verify_password(user.password, db_user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")  # 認証失敗
+
+    try:
+        access_token = create_access_token(data={"sub": user.email})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")  # 予期しないエラー
+
