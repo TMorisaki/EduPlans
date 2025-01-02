@@ -1,3 +1,6 @@
 fastapi
 uvicorn[standard]
 psycopg2-binary  # PostgreSQLとの連携
+PyJWT==2.6.0
+passlib==1.7.4
+sqlalchemy==1.4.41

@@ -2,6 +2,7 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
     password_hash VARCHAR(255),
     is_active BOOLEAN DEFAULT TRUE,
     mfa_enabled BOOLEAN DEFAULT FALSE,
