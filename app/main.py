@@ -23,7 +23,5 @@ app.include_router(user.router, prefix="/users", tags=["users"])
 @app.get("/")
 def read_root():
     return {
-        "message": "Welcome to the API!",
-        "SECRET_KEY": SECRET_KEY,
-        "DATABASE_URL": DATABASE_URL,
+        "message": "Welcome to the API!"
     }

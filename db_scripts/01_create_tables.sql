@@ -12,7 +12,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 -- mfa テーブル
 CREATE TABLE mfa (
     id SERIAL PRIMARY KEY,
@@ -40,34 +39,91 @@ CREATE TABLE login_attempts (
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 試行時刻
 );
 
--- users.email にインデックスを追加
+-- 指導案管理関連のテーブル
+
+-- plans テーブル（指導案のオリジン情報）
+CREATE TABLE plans (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    unit_id INT REFERENCES units(id) ON DELETE SET NULL,
+    created_by INT REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- plan_tree テーブル（指導案のバージョン管理）
+CREATE TABLE plan_tree (
+    id SERIAL PRIMARY KEY,
+    plan_id INT REFERENCES plans(id) ON DELETE CASCADE,
+    parent_version_id INT REFERENCES plan_tree(id) ON DELETE SET NULL,
+    depth INT NOT NULL,
+    description TEXT,
+    grade VARCHAR(50),
+    lesson_goal TEXT,
+    lesson_hours INT,
+    content TEXT NOT NULL,
+    reference_count INT DEFAULT 0,
+    fork_count INT DEFAULT 0,
+    created_by INT REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- units テーブル（単元マスタ）
+CREATE TABLE units (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    grade VARCHAR(50),
+    description TEXT
+);
+
+-- ゲーミフィケーション関連のテーブル
+
+-- user_achievements テーブル（バッジ管理）
+CREATE TABLE user_achievements (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    badge_name VARCHAR(255),
+    achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- plan_reviews テーブル（レビュー管理）
+CREATE TABLE plan_reviews (
+    id SERIAL PRIMARY KEY,
+    plan_id INT REFERENCES plans(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    rating INT CHECK (rating BETWEEN 1 AND 5),
+    review_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- user_points テーブル（ユーザーポイント管理）
+CREATE TABLE user_points (
+    user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    points INT DEFAULT 0
+);
+
+-- monthly_awards テーブル（毎月の指導案アワード）
+CREATE TABLE monthly_awards (
+    id SERIAL PRIMARY KEY,
+    award_name VARCHAR(255),
+    plan_id INT REFERENCES plans(id) ON DELETE SET NULL,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    month TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- plan_shares テーブル（指導案のシェア履歴）
+CREATE TABLE plan_shares (
+    id SERIAL PRIMARY KEY,
+    plan_id INT REFERENCES plans(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    platform VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックスの作成
 CREATE INDEX idx_users_email ON users(email);
-
--- social_accounts.provider_id にインデックスを追加
 CREATE INDEX idx_social_accounts_provider_id ON social_accounts(provider_id);
-
--- login_attempts.user_id にインデックスを追加
 CREATE INDEX idx_login_attempts_user_id ON login_attempts(user_id);
-
--- users テーブルにテストデータを挿入
-INSERT INTO users (email, password_hash, role, settings) 
-VALUES 
-('teacher1@example.com', 'hashed_password_1', 'user', '{"theme": "dark"}'),
-('admin@example.com', 'hashed_password_2', 'admin', '{"theme": "light"}');
-
--- mfa テーブルにテストデータを挿入
-INSERT INTO mfa (user_id, secret_key, backup_codes) 
-VALUES 
-(1, 'abcdefg1234567', ARRAY['backup1', 'backup2', 'backup3']);
-
--- social_accounts テーブルにテストデータを挿入
-INSERT INTO social_accounts (user_id, provider, provider_id, access_token) 
-VALUES 
-(1, 'google', 'google_user_123', 'example_access_token_1');
-
--- login_attempts テーブルにテストデータを挿入
-INSERT INTO login_attempts (user_id, ip_address, success) 
-VALUES 
-(1, '192.168.1.1', TRUE),
-(1, '192.168.1.2', FALSE);
-
+CREATE INDEX idx_plan_tree_plan_id ON plan_tree(plan_id);
+CREATE INDEX idx_plan_reviews_plan_id ON plan_reviews(plan_id);
+CREATE INDEX idx_plan_shares_plan_id ON plan_shares(plan_id);
